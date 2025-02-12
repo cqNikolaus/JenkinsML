@@ -1,6 +1,11 @@
 pipeline {
   agent any
   stages {
+    stage('Prepare Workspace') {
+      steps {
+        sh 'mkdir -p output'
+      }
+    }
     stage('Build Docker Image') {
       steps {
         sh 'docker build -t jenkins-builddata .'
