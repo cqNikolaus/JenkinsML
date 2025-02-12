@@ -1,6 +1,5 @@
 FROM python:3.9
-WORKDIR /workspace
+WORKDIR /app
 RUN pip install requests pandas
-COPY . /workspace
-CMD ["python", "/workspace/extract_data.py"]
-
+COPY . /app
+CMD ["python", "/app/extract_data.py"]
