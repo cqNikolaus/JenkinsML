@@ -146,7 +146,7 @@ def main():
     print(f"Anzahl eingelesener Builds: {len(df)}")
 
     # Speichert die Build-Daten als CSV-Datei
-    df.to_csv(OUTPUT_CSV, index=False)
+    df.to_csv(sys.stdout, index=False)
 
     print(f"Build-Daten wurden in '{OUTPUT_CSV}' gespeichert.")
 
