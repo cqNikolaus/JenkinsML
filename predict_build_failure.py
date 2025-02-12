@@ -62,6 +62,11 @@ raw_build_data = fetch_jenkins_data(JOB_NAME, max_builds=50)
 df = pd.DataFrame(raw_build_data)
 df = df[df["result"] != "UNKNOWN"]  # nur valide Resultate
 
+# Falls zu wenige Daten vorhanden sind, abbrechen
+if len(df) < 10:
+    print("Nicht genug Build-Daten für ein sinnvolles Training!")
+    exit()
+
 # 3. Feature-Set & Label definieren
 X = df[["duration_sec", "commits_count"]]
 y = df["result_bin"]
@@ -78,10 +83,39 @@ model.fit(X_train, y_train)
 # 6. Bewertung (Accuracy)
 y_pred = model.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
-print(f"Accuracy: {accuracy:.2f}")
 
-# 7. Beispiel: Prognose für einen neuen Build
-#    Angenommen der nächste Build läuft 300 Sekunden und hat 5 Commits
-test_build_data = pd.DataFrame(np.array([[300.0, 5]]), columns=["duration_sec", "commits_count"])  # [duration_sec, commits_count]
+# 7. Statistische Analyse der Trainingsdaten
+mean_duration = df["duration_sec"].mean()
+std_duration = df["duration_sec"].std()
+mean_commits = df["commits_count"].mean()
+std_commits = df["commits_count"].std()
+num_builds = len(df)
+num_fails = df["result_bin"].sum()
+num_success = num_builds - num_fails
+fail_rate = num_fails / num_builds * 100
+
+# 8. Modellparameter ausgeben (Feature-Gewichtungen)
+feature_weights = model.coef_[0]
+
+# 9. Beispiel: Prognose für einen neuen Build
+test_build_data = pd.DataFrame(np.array([[300.0, 5]]), columns=["duration_sec", "commits_count"])
 prob_failure = model.predict_proba(test_build_data)[0][1]  # index 1 = Wahrscheinlichkeit für FAIL
-print(f"Wahrscheinlichkeit für Fehlschlag: {prob_failure * 100:.2f}%")
+
+# 10. Ergebnisse ausgeben
+print("="*50)
+print("Jenkins Build-Analyse & Vorhersage")
+print("="*50)
+print(f"Anzahl analysierter Builds: {num_builds}")
+print(f"Erfolgreiche Builds: {num_success} | Fehlgeschlagene Builds: {num_fails}")
+print(f"Fehlerrate gesamt: {fail_rate:.2f}%")
+print("-"*50)
+print(f"Durchschnittliche Build-Dauer: {mean_duration:.2f} Sek (± {std_duration:.2f})")
+print(f"Durchschnittliche Anzahl Commits pro Build: {mean_commits:.2f} (± {std_commits:.2f})")
+print("-"*50)
+print(f"Trainingsgenauigkeit des Modells: {accuracy:.2f}")
+print(f"Modell-Gewichtungen für Features:")
+print(f"  - Dauer (Sekunden): {feature_weights[0]:.4f}")
+print(f"  - Anzahl Commits: {feature_weights[1]:.4f}")
+print("-"*50)
+print(f"Wahrscheinlichkeit für Fehlschlag des nächsten Builds (300s, 5 Commits): {prob_failure*100:.2f}%")
+print("="*50)
