@@ -33,7 +33,7 @@ def fetch_jenkins_data(job_name, max_builds=50):
             response.raise_for_status()  # Fehlerhafte HTTP-Antworten werfen eine Exception
         except requests.exceptions.RequestException as e:
             print(f"Fehler beim Abrufen von Build {build_number}: {e}", file=sys.stderr)
-            continue  # Überspringe diesen Build und fahre mit dem nächsten fort
+            break  # Bei einem Fehler wird angenommen, dass keine weiteren Builds existieren
 
         data = response.json()
 
