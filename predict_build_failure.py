@@ -1,6 +1,7 @@
 import os
 import requests
 import pandas as pd
+import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
@@ -81,6 +82,6 @@ print(f"Accuracy: {accuracy:.2f}")
 
 # 7. Beispiel: Prognose für einen neuen Build
 #    Angenommen der nächste Build läuft 300 Sekunden und hat 5 Commits
-test_build_data = [[300.0, 5]]  # [duration_sec, commits_count]
+test_build_data = pd.DataFrame(np.array([[300.0, 5]]), columns=["duration_sec", "commits_count"])  # [duration_sec, commits_count]
 prob_failure = model.predict_proba(test_build_data)[0][1]  # index 1 = Wahrscheinlichkeit für FAIL
 print(f"Wahrscheinlichkeit für Fehlschlag: {prob_failure * 100:.2f}%")
