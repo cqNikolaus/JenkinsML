@@ -20,7 +20,7 @@ OUTPUT_CSV = "build_data.csv"
 def fetch_jenkins_data(job_name, max_builds=50):
     """
     Ruft für einen angegebenen Jenkins-Job die letzten `max_builds` Builds ab
-    und extrahiert verschiedene relevante Informationen für Machine Learning.
+    und extrahiert verschiedene Daten.
     Gibt eine Liste von Dictionaries zurück, die in eine CSV gespeichert werden können.
     """
     build_data = []
