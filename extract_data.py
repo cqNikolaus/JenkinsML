@@ -14,7 +14,7 @@ JOB_NAME = "jenkins-setup"
 MAX_BUILDS = 5000
 
 # Name der Ausgabedatei
-OUTPUT_CSV = "/output/build_data.csv"
+OUTPUT_CSV = "build_data.csv"
 
 
 
