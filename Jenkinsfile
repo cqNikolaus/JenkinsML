@@ -1,11 +1,6 @@
 pipeline {
   agent any
   stages {
-    stage('Checkout') {
-      steps {
-        git 'https://github.com/cqNikolaus/JenkinsML.git'
-      }
-    }
     stage('Build Docker Image') {
       steps {
         sh 'docker build -t jenkinsml-poc .'
