@@ -3,26 +3,40 @@ import sys
 import requests
 import pandas as pd
 import json
+import re
 
 # Jenkins-Server Konfiguration
 JENKINS_URL = "https://jenkins-clemens01-0.comquent.academy/"
 USERNAME = "admin"
 API_TOKEN = os.getenv("JENKINS_TOKEN")
-
-# Jenkins-Job Name und maximale Anzahl von Builds, die abgerufen werden
 JOB_NAME = "jenkins-setup"
 MAX_BUILDS = 5000
-
-# Name der Ausgabedatei
 OUTPUT_CSV = "build_data.csv"
 
+
+def fetch_build_log(job_name, build_number):
+    """
+    Ruft den Konsolen-Log eines Builds ab.
+    """
+    log_url = f"{JENKINS_URL}/job/{job_name}/{build_number}/consoleText"
+    response = requests.get(log_url, auth=(USERNAME, API_TOKEN))
+
+    if response.status_code == 200:
+        return response.text
+
+    return ""
+
+
+def count_error_keywords(log_text):
+    """
+    Zählt, wie oft bestimmte Schlüsselwörter (ERROR, Exception) im Log vorkommen.
+    """
+    return len(re.findall(r'(?i)(error|exception)', log_text))
 
 
 def fetch_jenkins_data(job_name, max_builds=50):
     """
-    Ruft für einen angegebenen Jenkins-Job die letzten `max_builds` Builds ab
-    und extrahiert verschiedene Daten.
-    Gibt eine Liste von Dictionaries zurück, die in eine CSV gespeichert werden können.
+    Ruft Daten zu den letzten Builds aus Jenkins ab und extrahiert relevante Informationen.
     """
     build_data = []
 
@@ -31,14 +45,14 @@ def fetch_jenkins_data(job_name, max_builds=50):
 
         try:
             response = requests.get(url, auth=(USERNAME, API_TOKEN), timeout=10)
-            response.raise_for_status()  # Fehlerhafte HTTP-Antworten werfen eine Exception
+            response.raise_for_status()
         except requests.exceptions.RequestException as e:
             print(f"Fehler beim Abrufen von Build {build_number}: {e}", file=sys.stderr)
-            break  # Bei einem Fehler wird angenommen, dass keine weiteren Builds existieren
+            break
 
         data = response.json()
 
-        # Basisinformationen zum Build
+        # Grundlegende Build-Informationen
         build_result = data.get("result", "UNKNOWN")
         duration_ms = data.get("duration", 0)
         timestamp_ms = data.get("timestamp", 0)
@@ -48,19 +62,19 @@ def fetch_jenkins_data(job_name, max_builds=50):
         full_display_name = data.get("fullDisplayName", "")
         build_url = data.get("url", "")
         queue_id = data.get("queueId", 0)
-        building = int(data.get("building", False))  # 1 = läuft noch, 0 = abgeschlossen
+        building = int(data.get("building", False))
 
-        # Datum und Uhrzeit des Builds
+        # Umwandlung des Zeitstempels in ein lesbares Format
         build_time = ""
         if timestamp_ms:
             build_time = pd.to_datetime(timestamp_ms, unit="ms").strftime("%Y-%m-%d %H:%M:%S")
 
-        # ChangeSet-Daten (Änderungen am Code, Commits)
+        # Informationen zum ChangeSet (Änderungen am Code)
         change_set = data.get("changeSet", {})
         commits_count = len(change_set.get("items", []))
+
         commit_authors = set()
         total_commit_msg_length = 0
-
         for item in change_set.get("items", []):
             author = item.get("author", {}).get("fullName", "")
             if author:
@@ -70,10 +84,8 @@ def fetch_jenkins_data(job_name, max_builds=50):
         commit_authors_count = len(commit_authors)
         change_set_kind = change_set.get("kind", "")
 
-        # Anzahl der Personen, die Änderungen beigetragen haben
+        # Weitere Build-Informationen
         culprits_count = len(data.get("culprits", []))
-
-        # Executor-Informationen (wer oder was hat den Build ausgeführt)
         executor_info = data.get("executor", {})
         executor_name = executor_info.get("name", "") if isinstance(executor_info, dict) else ""
 
@@ -84,22 +96,24 @@ def fetch_jenkins_data(job_name, max_builds=50):
                 for cause in action.get("causes", []):
                     if "shortDescription" in cause:
                         trigger_types.append(cause["shortDescription"])
-
         trigger_types_str = ", ".join(trigger_types)
 
-        # Parameter, die an den Build übergeben wurden
+        # Build-Parameter als JSON speichern
         parameters = {}
         for action in data.get("actions", []):
             if isinstance(action, dict) and "parameters" in action:
                 for param in action.get("parameters", []):
                     parameters[param.get("name", "")] = param.get("value", "")
+        parameters_str = json.dumps(parameters)
 
-        parameters_str = json.dumps(parameters)  # Parameter als JSON-String speichern
-
-        # Erfolg/Misserfolg des Builds als numerisches Label für ML
+        # Ergebnis des Builds als binäres Label (1 = FAILURE, 0 = SUCCESS)
         result_bin = 1 if build_result == "FAILURE" else 0
 
-        # Gesammelte Daten für diesen Build als Dictionary speichern
+        # Build-Log abrufen und Fehler im Log zählen
+        log_text = fetch_build_log(job_name, build_number)
+        error_count = count_error_keywords(log_text)
+
+        # Daten zum Build speichern
         build_data.append({
             "build_number": build_number,
             "result": build_result,
@@ -121,7 +135,8 @@ def fetch_jenkins_data(job_name, max_builds=50):
             "change_set_kind": change_set_kind,
             "culprits_count": culprits_count,
             "executor_name": executor_name,
-            "trigger_types": trigger_types_str
+            "trigger_types": trigger_types_str,
+            "error_count": error_count
         })
 
     return build_data
