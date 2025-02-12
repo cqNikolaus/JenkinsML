@@ -9,6 +9,7 @@ pipeline {
     stage('Run Container') {
       steps {
         withCredentials([string(credentialsId: 'jenkins-api-token', variable: 'JENKINS_TOKEN')]) {
+          sh 'ls -la $WORKSPACE'
           sh 'docker run --rm -e JENKINS_TOKEN=${JENKINS_TOKEN} -v $WORKSPACE:/workspace jenkins-builddata'
         }
       }
