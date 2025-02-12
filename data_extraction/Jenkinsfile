@@ -3,7 +3,7 @@ pipeline {
   stages {
     stage('Build Docker Image') {
       steps {
-        sh 'docker build -t jenkins-builddata .'
+        sh 'docker build -t jenkins-builddata ./data_extraction'
       }
     }
     stage('Run Container') {
