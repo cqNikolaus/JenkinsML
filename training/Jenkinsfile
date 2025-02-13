@@ -14,7 +14,7 @@ pipeline {
     stage('Run Container') {
       steps {
         sh 'ls -la'
-        sh 'docker run --rm -v $WORKSPACE:/workspace train-model ls -la /workspace'  // Debugging: Prüfen, ob die Datei im Container sichtbar ist
+        sh 'docker run --rm -v $WORKSPACE:/workspace train-model ls -la /workspace --input_csv /workspace/build_data.csv'  // Debugging: Prüfen, ob die Datei im Container sichtbar ist
         sh 'docker run --rm -v $WORKSPACE:/workspace train-model --input_csv /workspace/build_data.csv --output_model /workspace/model.pkl'
       }
     }
