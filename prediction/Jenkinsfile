@@ -1,0 +1,30 @@
+pipeline {
+  agent any
+  stages {
+    stage('Build Docker Image') {
+      steps {
+        sh 'docker build -t predict-image ./prediction'
+      }
+    }
+    stage('Copy artifact') {
+      steps {
+        copyArtifacts(projectName: 'ml-model-training');
+      }
+    }
+    stage('Run Container') {
+      steps {
+        sh 'docker rm -f predict-image-run 2>/dev/null || true'
+        sh 'docker create --name predict-image-run predict-image --INPUT_PARAMETER /app/model.pkl'
+        sh 'docker cp model.pkl predict-image-run:/app/model.pkl'
+        sh 'docker start -a predict-image-run'
+        sh 'docker cp predict-image-run:/app/model.pkl model.pkl'
+        sh 'docker rm predict-image-run'
+      }
+    }
+  }
+  post {
+    always {
+      archiveArtifacts artifacts: 'model.pkl', fingerprint: true
+    }
+  }
+}

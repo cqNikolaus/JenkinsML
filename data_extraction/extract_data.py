@@ -9,7 +9,7 @@ import re
 JENKINS_URL = "https://jenkins-clemens01-0.comquent.academy/"
 USERNAME = "admin"
 API_TOKEN = os.getenv("JENKINS_TOKEN")
-JOB_NAME = "jenkins-setup"
+JOB_NAME = os.getenv('JOB_NAME')
 MAX_BUILDS = 5000
 OUTPUT_CSV = "build_data.csv"
 

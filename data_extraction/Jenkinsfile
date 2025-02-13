@@ -1,5 +1,8 @@
 pipeline {
   agent any
+  parameters {
+    string(name: 'TARGET_JOB_NAME', defaultValue: 'jenkins-setup', description: 'Name des Jenkins-Jobs, dessen Daten extrahiert werden sollen.')
+  }
   stages {
     stage('Build Docker Image') {
       steps {
@@ -9,14 +12,14 @@ pipeline {
     stage('Run Container') {
       steps {
         withCredentials([string(credentialsId: 'jenkins-api-token', variable: 'JENKINS_TOKEN')]) {
-          sh 'docker run --rm -e JENKINS_TOKEN=${JENKINS_TOKEN} jenkins-builddata > build_data.csv'
+          sh 'docker run --rm -e JENKINS_TOKEN=${JENKINS_TOKEN} -e JOB_NAME=${TARGET_JOB_NAME} jenkins-builddata > ${TARGET_JOB_NAME}_build_data.csv'
         }
       }
     }
   }
   post {
     always {
-      archiveArtifacts artifacts: 'build_data.csv', fingerprint: true
+      archiveArtifacts artifacts: '${TARGET_JOB_NAME}_build_data.csv', fingerprint: true
     }
   }
 }
