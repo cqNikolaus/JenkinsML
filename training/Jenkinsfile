@@ -13,6 +13,7 @@ pipeline {
     }
     stage('Run Container') {
       steps {
+        sh 'docker rm -f train-model-run 2>/dev/null || true'
         sh 'docker create --name train-model-run train-model --input_csv /app/build_data.csv'
         sh 'docker cp build_data.csv train-model-run:/app/build_data.csv'
         sh 'docker start -a train-model-run'
