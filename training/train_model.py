@@ -111,8 +111,16 @@ def load_data(input_csv: str) -> pd.DataFrame:
     Lädt die CSV-Daten in einen DataFrame.
     """
     try:
-        data = pd.read_csv(input_csv)
+        first_row = pd.read_csv(input_csv, nrows=1).columns.tolist()
+
+        if "result_bin" not in first_row:
+            logging.warning("Die erste Zeile scheint Metadaten zu sein. Ignoriere sie...")
+            data = pd.read_csv(input_csv, skiprows=1)  # Erste Zeile überspringen
+        else:
+            data = pd.read_csv(input_csv)  # Normal einlesen
+
         logging.info("Daten aus '%s' erfolgreich geladen.", input_csv)
+        logging.info("Erkannte Spalten: %s", list(data.columns))  # Debugging
         return data
     except Exception as e:
         logging.error("Fehler beim Laden der Datei '%s': %s", input_csv, e)
