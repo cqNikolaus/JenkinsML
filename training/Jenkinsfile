@@ -8,12 +8,21 @@ pipeline {
     }
     stage('Copy artifact') {
       steps {
-        copyArtifacts(projectName: 'build-data-extraction');
+        copyArtifacts(
+          projectName: 'build-data-extraction',
+          filter: 'build_data.csv',
+          selector: 'lastSuccessfulBuild'
+        )
       }
     }
     stage('Run Container') {
       steps {
-        sh 'docker run --rm -v $WORKSPACE:/workspace -e JENKINS_TOKEN=${JENKINS_TOKEN} train-model --input_csv /workspace/build_data.csv --output_model /workspace/model.pkl'
+        sh '''
+        docker run --rm \
+          -v $WORKSPACE:/workspace \
+          -e JENKINS_TOKEN="${JENKINS_TOKEN}" \
+          train-model --input_csv /workspace/build_data.csv --output_model /workspace/model.pkl
+        '''
       }
     }
   }
