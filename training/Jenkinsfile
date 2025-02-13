@@ -14,7 +14,7 @@ pipeline {
     stage('Run Container') {
       steps {
         sh 'ls -la'
-        sh 'docker run --rm -v $(pwd):/workspace train-model --input_csv /workspace/build_data.csv --output_model /workspace/model.pkl'
+        sh 'docker run --rm -v $(pwd):/workspace train-model --input_csv /var/jenkins_home/workspace/build_data.csv --output_model /workspace/model.pkl'
       }
     }
   }
