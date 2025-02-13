@@ -108,23 +108,29 @@ def parse_arguments() -> argparse.Namespace:
 
 def load_data(input_csv: str) -> pd.DataFrame:
     """
-    Lädt die CSV-Daten in einen DataFrame.
+    Lädt die CSV-Daten in einen DataFrame und erkennt automatisch, ob eine Kopfzeile ignoriert werden muss.
     """
     try:
-        first_row = pd.read_csv(input_csv, nrows=1).columns.tolist()
+        # 1️⃣ CSV normal einlesen
+        df = pd.read_csv(input_csv)
 
-        if "result_bin" not in first_row:
+        # 2️⃣ Falls nur eine einzige Spalte existiert, ist die erste Zeile keine echte Header-Zeile → Erste Zeile ignorieren
+        if len(df.columns) == 1:
             logging.warning("Die erste Zeile scheint Metadaten zu sein. Ignoriere sie...")
-            data = pd.read_csv(input_csv, skiprows=1)  # Erste Zeile überspringen
-        else:
-            data = pd.read_csv(input_csv)  # Normal einlesen
+            df = pd.read_csv(input_csv, skiprows=1)  # Erste Zeile überspringen
+
+        # 3️⃣ Sicherstellen, dass 'result_bin' existiert
+        if "result_bin" not in df.columns:
+            logging.error("Fehler: 'result_bin' Spalte nicht gefunden! Verfügbar: %s", list(df.columns))
+            sys.exit(1)
 
         logging.info("Daten aus '%s' erfolgreich geladen.", input_csv)
-        logging.info("Erkannte Spalten: %s", list(data.columns))  # Debugging
-        return data
+        logging.info("Erkannte Spalten: %s", list(df.columns))  # Debugging
+        return df
     except Exception as e:
         logging.error("Fehler beim Laden der Datei '%s': %s", input_csv, e)
         sys.exit(1)
+
 
 
 def build_preprocessor(X: pd.DataFrame, args: argparse.Namespace) -> ColumnTransformer:
