@@ -13,7 +13,7 @@ pipeline {
     }
     stage('Run Container') {
       steps {
-        sh 'docker run --rm -v $WORKSPACE:/workspace -e JENKINS_TOKEN=${JENKINS_TOKEN} train-model --input_csv /workspace/build_data.csv --output_model /workspace/model.pkl'
+        sh 'docker run --rm -v $WORKSPACE:/workspace train-model --input_csv /workspace/build_data.csv --output_model /workspace/model.pkl'
       }
     }
   }
