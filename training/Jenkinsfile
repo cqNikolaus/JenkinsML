@@ -1,0 +1,25 @@
+pipeline {
+  agent any
+  stages {
+    stage('Build Docker Image') {
+      steps {
+        sh 'docker build -t train-model ./training'
+      }
+    }
+    stage('Copy artifact') {
+      steps {
+        copyArtifacts(projectName: 'build-data-extraction');
+      }
+    }
+    stage('Run Container') {
+      steps {
+        sh 'docker run --rm -v $WORKSPACE:/workspace -e JENKINS_TOKEN=${JENKINS_TOKEN} train-model --input_csv /workspace/build_data.csv --output_model /workspace/model.pkl'
+      }
+    }
+  }
+  post {
+    always {
+      archiveArtifacts artifacts: 'model.pkl', fingerprint: true
+    }
+  }
+}
