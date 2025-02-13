@@ -13,10 +13,11 @@ pipeline {
     }
     stage('Run Container') {
       steps {
-        // Debug: Zeigt die Datei im Jenkins-Container, aber nicht im Docker-Container
-        sh 'docker run --rm -v $WORKSPACE:/workspace train-model ls -la /workspace || echo "Fehlermeldung: Kein Zugriff auf /workspace im Container"'
-        // Fix: Nutze den absoluten Mount-Pfad, falls $WORKSPACE nicht funktioniert
-        sh 'docker run --rm -v /var/jenkins_home/workspace/ml-model-training:/workspace train-model --input_csv /workspace/build_data.csv --output_model /workspace/model.pkl'
+        sh 'docker create --name train-model-run train-model --input_csv /app/build_data.csv'
+        sh 'docker cp build_data.csv train-model-run:/app/build_data.csv'
+        sh 'docker start -a train-model-run'
+        sh 'docker cp train-model-run:/app/model.pkl model.pkl'
+        sh 'docker rm train-model-run'
       }
     }
   }
