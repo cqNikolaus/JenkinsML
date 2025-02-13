@@ -19,7 +19,7 @@ pipeline {
   }
   post {
     always {
-      archiveArtifacts artifacts: '${TARGET_JOB_NAME}_build_data.csv', fingerprint: true
+      archiveArtifacts artifacts: "${env.TARGET_JOB_NAME}_build_data.csv", fingerprint: true
     }
   }
 }
