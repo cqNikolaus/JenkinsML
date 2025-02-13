@@ -108,29 +108,30 @@ def parse_arguments() -> argparse.Namespace:
 
 def load_data(input_csv: str) -> pd.DataFrame:
     """
-    Lädt die CSV-Daten in einen DataFrame und erkennt automatisch, ob eine Kopfzeile ignoriert werden muss.
+    Lädt die CSV-Daten in einen DataFrame und entfernt ggf. erste oder letzte Zeile,
+    falls diese offensichtlich keine gültigen Daten enthalten.
     """
     try:
-        # 1️⃣ CSV normal einlesen
-        df = pd.read_csv(input_csv)
-
-        # 2️⃣ Falls nur eine einzige Spalte existiert, ist die erste Zeile keine echte Header-Zeile → Erste Zeile ignorieren
-        if len(df.columns) == 1:
+        # Prüfe, ob die Headerzeile "result_bin" enthält; falls nicht, überspringe die erste Zeile.
+        first_row = pd.read_csv(input_csv, nrows=1).columns.tolist()
+        if "result_bin" not in first_row:
             logging.warning("Die erste Zeile scheint Metadaten zu sein. Ignoriere sie...")
-            df = pd.read_csv(input_csv, skiprows=1)  # Erste Zeile überspringen
+            data = pd.read_csv(input_csv, skiprows=1)
+        else:
+            data = pd.read_csv(input_csv)
 
-        # 3️⃣ Sicherstellen, dass 'result_bin' existiert
-        if "result_bin" not in df.columns:
-            logging.error("Fehler: 'result_bin' Spalte nicht gefunden! Verfügbar: %s", list(df.columns))
-            sys.exit(1)
+        # Überprüfe die letzte Zeile: Falls die Zielspalte ungültige Werte enthält, entferne sie.
+        last_row = data.iloc[-1]
+        if pd.isna(last_row[LABEL_COLUMN]):
+            logging.warning("Die letzte Zeile scheint ungültige Werte zu enthalten. Entferne sie.")
+            data = data.iloc[:-1]
 
         logging.info("Daten aus '%s' erfolgreich geladen.", input_csv)
-        logging.info("Erkannte Spalten: %s", list(df.columns))  # Debugging
-        return df
+        logging.info("Erkannte Spalten: %s", list(data.columns))
+        return data
     except Exception as e:
         logging.error("Fehler beim Laden der Datei '%s': %s", input_csv, e)
         sys.exit(1)
-
 
 
 def build_preprocessor(X: pd.DataFrame, args: argparse.Namespace) -> ColumnTransformer:
