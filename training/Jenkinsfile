@@ -21,7 +21,7 @@ pipeline {
                         dateColumnsArg = "--date_columns ${params.DATE_COLUMNS}"
                     }
                     sh """
-                    ls -la ${env.WORKSPACE}
+                    docker rm train-model-container
                     docker run --name train-model-container -v ${env.WORKSPACE}/train_data.csv:/app/train_data.csv model-training \\
                     python train_model.py \\
                     --input_csv /app/train_data.csv \\
