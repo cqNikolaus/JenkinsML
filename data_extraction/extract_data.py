@@ -9,7 +9,7 @@ import re
 JENKINS_URL = "https://jenkins-clemens01-0.comquent.academy/"
 USERNAME = "admin"
 API_TOKEN = os.getenv("JENKINS_TOKEN")
-JOB_NAME = os.getenv('JOB_NAME')
+JOB_NAME = os.getenv("JOB_NAME")
 MAX_BUILDS = 5000
 OUTPUT_CSV = "build_data.csv"
 
@@ -52,7 +52,7 @@ def fetch_jenkins_data(job_name, max_builds=50):
 
         data = response.json()
 
-        # Grundlegende Build-Informationen
+        # Build-Informationen
         build_result = data.get("result", "UNKNOWN")
         duration_ms = data.get("duration", 0)
         timestamp_ms = data.get("timestamp", 0)
@@ -64,12 +64,12 @@ def fetch_jenkins_data(job_name, max_builds=50):
         queue_id = data.get("queueId", 0)
         building = int(data.get("building", False))
 
-        # Umwandlung des Zeitstempels in ein lesbares Format
+        # Zeitstempel umwandeln
         build_time = ""
         if timestamp_ms:
             build_time = pd.to_datetime(timestamp_ms, unit="ms").strftime("%Y-%m-%d %H:%M:%S")
 
-        # Informationen zum ChangeSet (Änderungen am Code)
+        # Informationen zum ChangeSet (Code-Änderungen)
         change_set = data.get("changeSet", {})
         commits_count = len(change_set.get("items", []))
 
@@ -89,7 +89,7 @@ def fetch_jenkins_data(job_name, max_builds=50):
         executor_info = data.get("executor", {})
         executor_name = executor_info.get("name", "") if isinstance(executor_info, dict) else ""
 
-        # Trigger-Informationen (Was hat den Build ausgelöst?)
+        # Trigger-Informationen
         trigger_types = []
         for action in data.get("actions", []):
             if isinstance(action, dict) and "causes" in action:
@@ -98,7 +98,7 @@ def fetch_jenkins_data(job_name, max_builds=50):
                         trigger_types.append(cause["shortDescription"])
         trigger_types_str = ", ".join(trigger_types)
 
-        # Build-Parameter als JSON speichern
+        # Build-Parameter extrahieren
         parameters = {}
         for action in data.get("actions", []):
             if isinstance(action, dict) and "parameters" in action:
@@ -106,14 +106,14 @@ def fetch_jenkins_data(job_name, max_builds=50):
                     parameters[param.get("name", "")] = param.get("value", "")
         parameters_str = json.dumps(parameters)
 
-        # Ergebnis des Builds als binäres Label (1 = FAILURE, 0 = SUCCESS)
+        # Erfolg/Misserfolg als binäres Label (1 = FAILURE, 0 = SUCCESS)
         result_bin = 1 if build_result == "FAILURE" else 0
 
-        # Build-Log abrufen und Fehler im Log zählen
+        # Konsolen-Log abrufen und Fehler im Log zählen
         log_text = fetch_build_log(job_name, build_number)
         error_count = count_error_keywords(log_text)
 
-        # Daten zum Build speichern
+        # Extrahierte Daten speichern
         build_data.append({
             "build_number": build_number,
             "result": build_result,
@@ -144,8 +144,7 @@ def fetch_jenkins_data(job_name, max_builds=50):
 
 def main():
     """
-    Führt den Abruf der Jenkins-Build-Daten aus, speichert sie in eine CSV
-    und gibt eine kurze Zusammenfassung aus.
+    Führt den Abruf der Jenkins-Build-Daten aus und speichert sie in eine CSV-Datei.
     """
     data_list = fetch_jenkins_data(JOB_NAME, MAX_BUILDS)
 
@@ -155,15 +154,11 @@ def main():
 
     df = pd.DataFrame(data_list)
 
-    # Entferne Builds mit unbekanntem Status
+    # Entfernt Builds mit unbekanntem Status
     df = df[df["result"] != "UNKNOWN"]
 
-    print(f"Anzahl eingelesener Builds: {len(df)}")
-
     # Speichert die Build-Daten als CSV-Datei
-    df.to_csv(sys.stdout, index=False)
-
-    print(f"Build-Daten wurden in '{OUTPUT_CSV}' gespeichert.")
+    df.to_csv(OUTPUT_CSV, index=False)
 
 
 if __name__ == "__main__":
