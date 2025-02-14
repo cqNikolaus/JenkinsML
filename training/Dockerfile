@@ -3,5 +3,3 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY train_model.py ./
-RUN mkdir -p /app/workspace
-CMD ["python", "train_model.py"]
