@@ -15,15 +15,21 @@ pipeline {
         }
         stage('Run Training') {
             steps {
-                sh """
-                docker run --name train-model-container model-training python train_model.py \\
-                --input_csv /app/CSV_FILE \\
-                --model_name ${params.MODEL_NAME} \\
-                --date_columns ${params.DATE_COLUMNS}
-                """
-                sh 'docker cp train-model-container:/app/model.pkl /tmp/model.pkl'
-                sh 'docker cp /tmp/model.pkl jenkins:/var/jenkins_home/workspace/train-model/model.pkl'
-                sh 'docker rm train-model-container'
+                script {
+                    def dateColumnsArg = ""
+                    if (params.DATE_COLUMNS?.trim()) {
+                        dateColumnsArg = "--date_columns ${params.DATE_COLUMNS}"
+                    }
+                    sh """
+                    docker run --name train-model-container model-training python train_model.py \\
+                    --input_csv /app/CSV_FILE \\
+                    --model_name ${params.MODEL_NAME} \\
+                    ${dateColumnsArg}
+                    """
+                    sh 'docker cp train-model-container:/app/model.pkl /tmp/model.pkl'
+                    sh 'docker cp /tmp/model.pkl jenkins:/var/jenkins_home/workspace/train-model/model.pkl'
+                    sh 'docker rm train-model-container'
+                }
             }
         }
     }
