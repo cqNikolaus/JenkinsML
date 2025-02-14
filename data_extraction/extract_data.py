@@ -48,6 +48,8 @@ def fetch_jenkins_data(job_name, max_builds=50):
         timestamp_ms = data.get("timestamp", 0)
         estimated_duration_ms = data.get("estimatedDuration", 0)
         built_on = data.get("builtOn", "")
+        if not built_on:
+            built_on = "built_in"
         display_name = data.get("displayName", "")
         full_display_name = data.get("fullDisplayName", "")
         build_url = f"{JENKINS_URL}/job/{job_name}/{build_number}/"
