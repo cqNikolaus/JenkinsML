@@ -30,15 +30,20 @@ pipeline {
                     }
                     sh """
                     docker rm train-model-container
-                    docker run --name train-model-container -v "${env.WORKSPACE}/test_data.csv:/test_data.csv" model-training \\
-                    python train_model.py \\
+                    docker create --name train-model-container model training
+                    docker cp jenkins:${env.WORKSPACE}/test_data.csv tmp/test_data.csv
+                    docker cp tmp/test_data.csv train-model-container:/app/test_data.csv
+
+                    docker start train-model-container
+                    docker exec train-model-container model-training python train_model.py \\
                     --input_csv /test_data.csv \\
                     --model_name ${params.MODEL_NAME} \\
                     ${dateColumnsArg}
+
+                    docker cp train-model-container:/app/model.pkl /tmp/model.pkl
+                    docker cp /tmp/model.pkl jenkins:/var/jenkins_home/workspace/train-model/model.pkl
+                    docker rm train-model-container
                     """
-                    sh 'docker cp train-model-container:/app/model.pkl /tmp/model.pkl'
-                    sh 'docker cp /tmp/model.pkl jenkins:/var/jenkins_home/workspace/train-model/model.pkl'
-                    sh 'docker rm train-model-container'
                 }
             }
         }
