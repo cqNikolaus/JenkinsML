@@ -12,6 +12,7 @@ API_TOKEN = os.getenv("JENKINS_TOKEN")
 JOB_NAME = os.getenv("JOB_NAME")
 MAX_BUILDS = 5000
 
+
 def fetch_build_log(job_name, build_number):
     """
     Ruft den Konsolen-Log eines Builds ab.
@@ -22,11 +23,13 @@ def fetch_build_log(job_name, build_number):
         return response.text
     return ""
 
+
 def count_error_keywords(log_text):
     """
     Zählt, wie oft Schlüsselwörter (ERROR, Exception) im Log vorkommen.
     """
     return len(re.findall(r'(?i)(error|exception)', log_text))
+
 
 def fetch_jenkins_data(job_name, max_builds=50):
     """
@@ -47,18 +50,21 @@ def fetch_jenkins_data(job_name, max_builds=50):
         duration_ms = data.get("duration", 0)
         timestamp_ms = data.get("timestamp", 0)
         estimated_duration_ms = data.get("estimatedDuration", 0)
+
         built_on = data.get("builtOn", "")
         if not built_on:
             built_on = "built_in"
-        display_name = data.get("displayName", "")
-        full_display_name = data.get("fullDisplayName", "")
-        build_url = f"{JENKINS_URL}/job/{job_name}/{build_number}/"
-        queue_id = data.get("queueId", 0)
-        building = int(data.get("building", False))
 
-        build_time = ""
+        # build_url bleibt erhalten
+        build_url = f"{JENKINS_URL}/job/{job_name}/{build_number}/"
+
+        # Anstelle von build_time: Aufteilen in Datum und Uhrzeit
+        build_date = ""
+        build_time_str = ""
         if timestamp_ms:
-            build_time = pd.to_datetime(timestamp_ms, unit="ms").strftime("%Y-%m-%d %H:%M:%S")
+            dt = pd.to_datetime(timestamp_ms, unit="ms")
+            build_date = dt.strftime("%Y-%m-%d")
+            build_time_str = dt.strftime("%H:%M:%S")
 
         # Ermittlung der Commits aus changeSet oder changeSets
         commits_count = 0
@@ -121,15 +127,9 @@ def fetch_jenkins_data(job_name, max_builds=50):
             "result_bin": result_bin,
             "duration_sec": duration_ms / 1000.0,
             "commits_count": commits_count,
-            "timestamp_ms": timestamp_ms,
-            "build_time": build_time,
             "estimated_duration_sec": estimated_duration_ms / 1000.0,
             "built_on": built_on,
-            "display_name": display_name,
-            "full_display_name": full_display_name,
             "build_url": build_url,
-            "building": building,
-            "queue_id": queue_id,
             "parameters": parameters_str,
             "commit_authors_count": commit_authors_count,
             "total_commit_msg_length": total_commit_msg_length,
@@ -137,10 +137,13 @@ def fetch_jenkins_data(job_name, max_builds=50):
             "culprits_count": culprits_count,
             "executor_name": executor_name,
             "trigger_types": trigger_types_str,
-            "error_count": error_count
+            "error_count": error_count,
+            "build_date": build_date,  # Neues Datum-Feld
+            "build_time": build_time_str  # Neues Uhrzeit-Feld
         })
 
     return build_data
+
 
 def main():
     """
@@ -152,6 +155,7 @@ def main():
     df = pd.DataFrame(data_list)
     df = df[df["result"] != "UNKNOWN"]
     df.to_csv(sys.stdout, index=False)
+
 
 if __name__ == "__main__":
     main()
