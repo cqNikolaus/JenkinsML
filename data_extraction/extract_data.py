@@ -50,7 +50,7 @@ def fetch_jenkins_data(job_name, max_builds=50):
         built_on = data.get("builtOn", "")
         display_name = data.get("displayName", "")
         full_display_name = data.get("fullDisplayName", "")
-        build_url = data.get("url", "")
+        build_url = f"{JENKINS_URL}/job/{job_name}/{build_number}/"
         queue_id = data.get("queueId", 0)
         building = int(data.get("building", False))
 
