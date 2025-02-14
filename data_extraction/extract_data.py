@@ -60,8 +60,11 @@ def fetch_jenkins_data(job_name, max_builds=50):
         if timestamp_ms:
             build_time = pd.to_datetime(timestamp_ms, unit="ms").strftime("%Y-%m-%d %H:%M:%S")
 
-        change_set = data.get("changeSet", {})
-        commits_count = len(change_set.get("items", []))
+        commits_count = 0
+        if "changeSet" in data and data["changeSet"]:
+            commits_count = len(data["changeSet"].get("items", []))
+        elif "changeSets" in data:
+            commits_count = sum(len(cs.get("items", [])) for cs in data.get("changeSets", []))
 
         commit_authors = set()
         total_commit_msg_length = 0
