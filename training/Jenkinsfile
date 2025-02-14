@@ -18,8 +18,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Baue das Docker-Image (angenommener Image-Name: ml-model:latest)
-                    dockerImage = docker.build("ml-model:latest")
+                    // Hier wird der Dockerfile aus dem Unterverzeichnis "training" verwendet
+                    dockerImage = docker.build("ml-model:latest", "-f training/Dockerfile training/")
                 }
             }
         }
