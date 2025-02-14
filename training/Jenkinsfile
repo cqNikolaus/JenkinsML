@@ -30,6 +30,7 @@ pipeline {
                     }
                     sh """
                     docker rm train-model-container
+                    ls -l ${env.WORKSPACE}
                     docker run --name train-model-container -v ${env.WORKSPACE}:/app/test model-training \\
                     python train_model.py \\
                     --input_csv /app/test/my_data.csv \\
