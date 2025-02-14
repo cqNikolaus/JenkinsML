@@ -1,30 +1,48 @@
 pipeline {
-  agent any
-  stages {
-    stage('Build Docker Image') {
-      steps {
-        sh 'docker build -t train-model ./training'
-      }
+    agent any
+
+    parameters {
+        // Datei-Parameter: Beim "Mit Parametern bauen" erscheint ein Upload-Feld.
+        file(name: 'CSV_FILE', description: 'Bitte die CSV-Datei zum Training hochladen')
+        // Optional: Weitere Parameter, z. B. zur Auswahl des Modells
+        string(name: 'MODEL_NAME', defaultValue: 'random_forest', description: 'Modellname: random_forest, gradient_boosting, logistic_regression, xgboost')
+        string(name: 'DATE_COLUMNS', defaultValue: '', description: 'Optionale, kommagetrennte Liste von Datumsspalten')
     }
-    stage('Copy artifact') {
-      steps {
-        copyArtifacts(projectName: 'build-data-extraction');
-      }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Baue das Docker-Image (angenommener Image-Name: ml-model:latest)
+                    dockerImage = docker.build("ml-model:latest")
+                }
+            }
+        }
+        stage('Run Training') {
+            steps {
+                script {
+                    // Der File-Parameter "CSV_FILE" wird im Workspace abgelegt.
+                    // Wir mounten den gesamten Workspace in den Container unter /app/workspace
+                    // und verweisen in der CLI auf die hochgeladene Datei.
+                    def inputCsvPath = "/app/workspace/CSV_FILE"  // Datei wird im Workspace als "CSV_FILE" abgelegt
+                    def outputModelPath = "/app/workspace/model.pkl"
+                    def cmd = "python train_model.py --input_csv ${inputCsvPath} --model_name ${params.MODEL_NAME} --output_model ${outputModelPath}"
+
+                    if (params.DATE_COLUMNS?.trim()) {
+                        cmd += " --date_columns ${params.DATE_COLUMNS}"
+                    }
+
+                    echo "Starte Training mit Befehl: ${cmd}"
+
+                    // Führe den Container aus und mounte den Workspace
+                    dockerImage.run("--rm -v ${env.WORKSPACE}:/app/workspace", cmd)
+                }
+            }
+        }
     }
-    stage('Run Container') {
-      steps {
-        sh 'docker rm -f train-model-run 2>/dev/null || true'
-        sh 'docker create --name train-model-run train-model --input_csv /app/build_data.csv'
-        sh 'docker cp build_data.csv train-model-run:/app/build_data.csv'
-        sh 'docker start -a train-model-run'
-        sh 'docker cp train-model-run:/app/model.pkl model.pkl'
-        sh 'docker rm train-model-run'
-      }
-    }
-  }
-  post {
-    always {
-      archiveArtifacts artifacts: 'model.pkl', fingerprint: true
-    }
-  }
 }

@@ -97,7 +97,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--input_csv", type=str, required=True, help="Pfad zur Trainings-CSV-Datei.")
     parser.add_argument("--model_name", type=str, default="random_forest",
                         help="Wählbares Modell (random_forest, gradient_boosting, logistic_regression, xgboost).")
-    parser.add_argument("--output_model", type=str, default="model.pkl",
+    parser.add_argument("--output_model", type=str, default="/app/workspace/model.pkl",
                         help="Zieldatei für das trainierte Modell.")
     parser.add_argument("--max_cat_unique", type=int, default=30,
                         help="Maximale Anzahl eindeutiger Werte, damit String-Spalte als kategorisch gilt.")
@@ -201,6 +201,10 @@ def main():
 
     try:
         training_pipeline.fit(X, y)
+        # Sicherstellen, dass das Ausgabe-Verzeichnis existiert
+        output_dir = os.path.dirname(args.output_model)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
         joblib.dump(training_pipeline, args.output_model)
         logging.info("Modell '%s' wurde erfolgreich trainiert und in '%s' gespeichert.", args.model_name, args.output_model)
     except Exception as e:
