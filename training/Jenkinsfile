@@ -13,6 +13,11 @@ pipeline {
                     sh 'docker build -t model-training ./training'
             }
         }
+        stage('List workspace') {
+            steps {
+                sh 'ls -la'
+            }
+        }
         stage('Run Training') {
             steps {
                 script {
