@@ -36,7 +36,7 @@ pipeline {
                     docker cp /tmp/test_data.csv train-model-container:/app/test_data.csv
 
                     docker start train-model-container
-                    docker exec model-training python train_model.py \\
+                    docker exec --name train-model-container model-training python train_model.py \\
                     --input_csv /app/test_data.csv \\
                     --model_name ${params.MODEL_NAME} \\
                     ${dateColumnsArg}
