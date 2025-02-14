@@ -37,7 +37,8 @@ pipeline {
                     docker cp jenkins:${env.WORKSPACE}/test_data.csv /tmp/test_data.csv
                     docker cp /tmp/test_data.csv train-model-container:/app/test_data.csv
                     docker start train-model-container
-                    docker logs train-model-container
+                    docker ps -a | grep train-model-container
+
 
                     docker cp train-model-container:/app/model.pkl /tmp/model.pkl
                     docker cp /tmp/model.pkl jenkins:/var/jenkins_home/workspace/train-model/model.pkl
