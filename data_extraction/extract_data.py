@@ -60,21 +60,36 @@ def fetch_jenkins_data(job_name, max_builds=50):
         if timestamp_ms:
             build_time = pd.to_datetime(timestamp_ms, unit="ms").strftime("%Y-%m-%d %H:%M:%S")
 
+        # Ermittlung der Commits aus changeSet oder changeSets
         commits_count = 0
+        all_commits = []
         if "changeSet" in data and data["changeSet"]:
-            commits_count = len(data["changeSet"].get("items", []))
+            all_commits = data["changeSet"].get("items", [])
+            commits_count = len(all_commits)
         elif "changeSets" in data:
-            commits_count = sum(len(cs.get("items", [])) for cs in data.get("changeSets", []))
+            for cs in data.get("changeSets", []):
+                items = cs.get("items", [])
+                all_commits.extend(items)
+            commits_count = len(all_commits)
 
+        # Berechnung von commit authors und Gesamtlänge der Commit-Messages
         commit_authors = set()
         total_commit_msg_length = 0
-        for item in change_set.get("items", []):
+        for item in all_commits:
             author = item.get("author", {}).get("fullName", "")
             if author:
                 commit_authors.add(author)
             total_commit_msg_length += len(item.get("msg", ""))
         commit_authors_count = len(commit_authors)
-        change_set_kind = change_set.get("kind", "")
+
+        # Ermittlung von change_set_kind
+        if "changeSet" in data and data["changeSet"]:
+            change_set_kind = data["changeSet"].get("kind", "")
+        elif "changeSets" in data:
+            kinds = [cs.get("kind", "") for cs in data.get("changeSets", []) if cs.get("kind", "")]
+            change_set_kind = ", ".join(kinds)
+        else:
+            change_set_kind = ""
 
         culprits_count = len(data.get("culprits", []))
         executor_info = data.get("executor", {})
