@@ -30,10 +30,9 @@ pipeline {
                     }
                     sh """
                     docker rm train-model-container
-                    docker run --name train-model-container -v "${env.WORKSPACE}/test_data.csv:/app/test_data.csv" model-training \\
-                    bash -c "ls -l /app && ls -l /app/test_data.csv" \\
+                    docker run --name train-model-container -v "${env.WORKSPACE}/test_data.csv:/test_data.csv" model-training \\
                     python train_model.py \\
-                    --input_csv /app/test_data.csv \\
+                    --input_csv /test_data.csv \\
                     --model_name ${params.MODEL_NAME} \\
                     ${dateColumnsArg}
                     """
