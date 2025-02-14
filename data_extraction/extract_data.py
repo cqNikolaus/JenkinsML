@@ -10,7 +10,7 @@ JENKINS_URL = "https://jenkins-clemens01-0.comquent.academy/"
 USERNAME = "admin"
 API_TOKEN = os.getenv("JENKINS_TOKEN")
 JOB_NAME = os.getenv("JOB_NAME")
-MAX_BUILDS = 5000
+MAX_BUILDS = 50
 OUTPUT_CSV = "build_data.csv"
 
 
