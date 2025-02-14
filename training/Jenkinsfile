@@ -2,7 +2,7 @@ pipeline {
     agent any
     parameters {
         // Datei-Parameter: Beim "Mit Parametern bauen" erscheint ein Upload-Feld.
-        file(name: 'CSV_FILE', description: 'Bitte die CSV-Datei zum Training hochladen')
+        file(name: 'train_data.csv', description: 'Bitte die CSV-Datei zum Training hochladen')
         // Optional: Weitere Parameter, z. B. zur Auswahl des Modells
         string(name: 'MODEL_NAME', defaultValue: 'random_forest', description: 'Modellname: random_forest, gradient_boosting, logistic_regression, xgboost')
         string(name: 'DATE_COLUMNS', defaultValue: '', description: 'Optionale, kommagetrennte Liste von Datumsspalten')
@@ -22,9 +22,9 @@ pipeline {
                     }
                     sh """
                     ls -la ${env.WORKSPACE}
-                    docker run --name train-model-container -v ${env.WORKSPACE}/CSV_FILE:/app/CSV_FILE model-training \\
+                    docker run --name train-model-container -v ${env.WORKSPACE}/train_data.csv:/app/train_data.csv model-training \\
                     python train_model.py \\
-                    --input_csv /app/CSV_FILE \\
+                    --input_csv /app/train_data.csv \\
                     --model_name ${params.MODEL_NAME} \\
                     ${dateColumnsArg}
                     """
