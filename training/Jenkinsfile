@@ -1,6 +1,8 @@
 pipeline {
     agent any
     parameters {
+        // Datei-Parameter: Beim "Mit Parametern bauen" erscheint ein Upload-Feld.
+        base64file(name: 'CSV_FILE', description: 'Bitte die CSV-Datei zum Training hochladen')
         // Optional: Weitere Parameter, z. B. zur Auswahl des Modells
         string(name: 'MODEL_NAME', defaultValue: 'random_forest', description: 'Modellname: random_forest, gradient_boosting, logistic_regression, xgboost')
         string(name: 'DATE_COLUMNS', defaultValue: '', description: 'Optionale, kommagetrennte Liste von Datumsspalten')
@@ -23,17 +25,19 @@ pipeline {
                     if (params.DATE_COLUMNS?.trim()) {
                         dateColumnsArg = "--date_columns ${params.DATE_COLUMNS}"
                     }
-                    sh """
-                    docker rm train-model-container
-                    docker run --name train-model-container -v ${env.WORKSPACE}:/app/test model-training \\
-                    python train_model.py \\
-                    --input_csv /app/test/train_data.csv \\
-                    --model_name ${params.MODEL_NAME} \\
-                    ${dateColumnsArg}
-                    """
-                    sh 'docker cp train-model-container:/app/model.pkl /tmp/model.pkl'
-                    sh 'docker cp /tmp/model.pkl jenkins:/var/jenkins_home/workspace/train-model/model.pkl'
-                    sh 'docker rm train-model-container'
+                    withFileParameter('CSV_FILE') {
+                        sh """
+                        docker rm train-model-container
+                        docker run --name train-model-container model-training \\
+                        python train_model.py \\
+                        --input_csv ${CSV_FILE} \\
+                        --model_name ${params.MODEL_NAME} \\
+                        ${dateColumnsArg}
+                        """
+                        sh 'docker cp train-model-container:/app/model.pkl /tmp/model.pkl'
+                        sh 'docker cp /tmp/model.pkl jenkins:/var/jenkins_home/workspace/train-model/model.pkl'
+                        sh 'docker rm train-model-container'
+                    }
                 }
             }
         }
