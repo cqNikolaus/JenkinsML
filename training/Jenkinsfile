@@ -38,6 +38,7 @@ pipeline {
                     docker cp /tmp/test_data.csv train-model-container:/app/test_data.csv
                     docker start train-model-container
                     docker ps -a | grep train-model-container
+                    docker inspect train-model-container --format='{{.State.ExitCode}}'
 
 
                     docker cp train-model-container:/app/model.pkl /tmp/model.pkl
