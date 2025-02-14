@@ -10,9 +10,7 @@ JENKINS_URL = "https://jenkins-clemens01-0.comquent.academy/"
 USERNAME = "admin"
 API_TOKEN = os.getenv("JENKINS_TOKEN")
 JOB_NAME = os.getenv("JOB_NAME")
-MAX_BUILDS = 50
-OUTPUT_CSV = "build_data.csv"
-
+MAX_BUILDS = 5000
 
 def fetch_build_log(job_name, build_number):
     """
@@ -20,29 +18,23 @@ def fetch_build_log(job_name, build_number):
     """
     log_url = f"{JENKINS_URL}/job/{job_name}/{build_number}/consoleText"
     response = requests.get(log_url, auth=(USERNAME, API_TOKEN))
-
     if response.status_code == 200:
         return response.text
-
     return ""
-
 
 def count_error_keywords(log_text):
     """
-    Zählt, wie oft bestimmte Schlüsselwörter (ERROR, Exception) im Log vorkommen.
+    Zählt, wie oft Schlüsselwörter (ERROR, Exception) im Log vorkommen.
     """
     return len(re.findall(r'(?i)(error|exception)', log_text))
-
 
 def fetch_jenkins_data(job_name, max_builds=50):
     """
     Ruft Daten zu den letzten Builds aus Jenkins ab und extrahiert relevante Informationen.
     """
     build_data = []
-
     for build_number in range(1, max_builds + 1):
         url = f"{JENKINS_URL}/job/{job_name}/{build_number}/api/json"
-
         try:
             response = requests.get(url, auth=(USERNAME, API_TOKEN), timeout=10)
             response.raise_for_status()
@@ -51,8 +43,6 @@ def fetch_jenkins_data(job_name, max_builds=50):
             break
 
         data = response.json()
-
-        # Build-Informationen
         build_result = data.get("result", "UNKNOWN")
         duration_ms = data.get("duration", 0)
         timestamp_ms = data.get("timestamp", 0)
@@ -64,12 +54,10 @@ def fetch_jenkins_data(job_name, max_builds=50):
         queue_id = data.get("queueId", 0)
         building = int(data.get("building", False))
 
-        # Zeitstempel umwandeln
         build_time = ""
         if timestamp_ms:
             build_time = pd.to_datetime(timestamp_ms, unit="ms").strftime("%Y-%m-%d %H:%M:%S")
 
-        # Informationen zum ChangeSet (Code-Änderungen)
         change_set = data.get("changeSet", {})
         commits_count = len(change_set.get("items", []))
 
@@ -80,16 +68,13 @@ def fetch_jenkins_data(job_name, max_builds=50):
             if author:
                 commit_authors.add(author)
             total_commit_msg_length += len(item.get("msg", ""))
-
         commit_authors_count = len(commit_authors)
         change_set_kind = change_set.get("kind", "")
 
-        # Weitere Build-Informationen
         culprits_count = len(data.get("culprits", []))
         executor_info = data.get("executor", {})
         executor_name = executor_info.get("name", "") if isinstance(executor_info, dict) else ""
 
-        # Trigger-Informationen
         trigger_types = []
         for action in data.get("actions", []):
             if isinstance(action, dict) and "causes" in action:
@@ -98,7 +83,6 @@ def fetch_jenkins_data(job_name, max_builds=50):
                         trigger_types.append(cause["shortDescription"])
         trigger_types_str = ", ".join(trigger_types)
 
-        # Build-Parameter extrahieren
         parameters = {}
         for action in data.get("actions", []):
             if isinstance(action, dict) and "parameters" in action:
@@ -106,14 +90,11 @@ def fetch_jenkins_data(job_name, max_builds=50):
                     parameters[param.get("name", "")] = param.get("value", "")
         parameters_str = json.dumps(parameters)
 
-        # Erfolg/Misserfolg als binäres Label (1 = FAILURE, 0 = SUCCESS)
         result_bin = 1 if build_result == "FAILURE" else 0
 
-        # Konsolen-Log abrufen und Fehler im Log zählen
         log_text = fetch_build_log(job_name, build_number)
         error_count = count_error_keywords(log_text)
 
-        # Extrahierte Daten speichern
         build_data.append({
             "build_number": build_number,
             "result": build_result,
@@ -141,25 +122,16 @@ def fetch_jenkins_data(job_name, max_builds=50):
 
     return build_data
 
-
 def main():
     """
-    Führt den Abruf der Jenkins-Build-Daten aus und speichert sie in eine CSV-Datei.
+    Abruf der Jenkins-Build-Daten und Ausgabe als CSV über stdout.
     """
     data_list = fetch_jenkins_data(JOB_NAME, MAX_BUILDS)
-
     if not data_list:
-        print("Keine Build-Daten verfügbar oder API-Aufruf fehlgeschlagen.")
-        return
-
+        sys.exit("Keine Build-Daten verfügbar oder API-Aufruf fehlgeschlagen.")
     df = pd.DataFrame(data_list)
-
-    # Entfernt Builds mit unbekanntem Status
     df = df[df["result"] != "UNKNOWN"]
-
-    # Speichert die Build-Daten als CSV-Datei
-    df.to_csv(OUTPUT_CSV, index=False)
-
+    df.to_csv(sys.stdout, index=False)
 
 if __name__ == "__main__":
     main()
