@@ -44,7 +44,9 @@ pipeline {
 
                     docker cp train-model-container:/app/model.pkl /tmp/model.pkl
                     docker cp /tmp/model.pkl jenkins:/var/jenkins_home/workspace/train-model/model.pkl
-                    docker rm -f train-model-container
+                    docker stop train-model-container
+                    docker rm train-model-container
+
                     """
                 }
             }
