@@ -55,6 +55,7 @@ class JenkinsClient:
         Parst die JSON-Daten eines Builds und extrahiert die für ML relevanten Felder.
         Die unerwünschten Felder (timestamp, display_name, full_display_name, building, queue_id)
         werden nicht übernommen.
+        Zusätzlich werden abgeleitete Features erzeugt.
         """
         build_result = data.get("result", "UNKNOWN")
         duration_ms = data.get("duration", 0)
@@ -67,13 +68,29 @@ class JenkinsClient:
         # build_url wird manuell erzeugt
         build_url = f"{self.base_url}/job/{self.job_name}/{build_number}/"
 
-        # Aufteilen des Timestamps in Datum und Uhrzeit
+        # Aufteilen des Timestamps in mehrere zeitbasierte Features
         build_date = ""
         build_time_str = ""
+        build_weekday = None
+        build_hour = None
+        build_month = None
+        build_year = None
         if timestamp_ms:
             dt = pd.to_datetime(timestamp_ms, unit="ms")
             build_date = dt.strftime("%Y-%m-%d")
             build_time_str = dt.strftime("%H:%M:%S")
+            build_weekday = dt.weekday()  # 0 = Montag, 6 = Sonntag
+            build_hour = dt.hour
+            build_month = dt.month
+            build_year = dt.year
+
+        # Berechnung der Build-Dauern (in Sekunden)
+        duration_sec = duration_ms / 1000.0
+        estimated_duration_sec = estimated_duration_ms / 1000.0
+
+        # Abgeleitete Dauer-Features
+        duration_diff = duration_sec - estimated_duration_sec
+        duration_ratio = duration_sec / (estimated_duration_sec + 1e-9)  # epsilon um Division durch 0 zu vermeiden
 
         # Ermittlung der Commits aus "changeSet" oder "changeSets"
         commits_count = 0
@@ -97,6 +114,10 @@ class JenkinsClient:
             total_commit_msg_length += len(item.get("msg", ""))
         commit_authors_count = len(commit_authors)
 
+        # Abgeleitetes Kombinationsfeature: Verhältnis von culprits zu commit authors
+        culprits_count = len(data.get("culprits", []))
+        culprit_ratio = culprits_count / (commit_authors_count + 1)  # +1 zur Vermeidung von Division durch 0
+
         # Ermittlung des change_set_kind
         if "changeSet" in data and data["changeSet"]:
             change_set_kind = data["changeSet"].get("kind", "")
@@ -106,7 +127,6 @@ class JenkinsClient:
         else:
             change_set_kind = ""
 
-        culprits_count = len(data.get("culprits", []))
         executor_info = data.get("executor", {})
         executor_name = executor_info.get("name", "") if isinstance(executor_info, dict) else ""
 
@@ -133,14 +153,13 @@ class JenkinsClient:
         log_text = self.fetch_build_log(build_number)
         error_count = self.count_error_keywords(log_text)
 
-        # Zusammenstellen der finalen Daten
         return {
             "build_number": build_number,
             "result": build_result,
             "result_bin": result_bin,
-            "duration_sec": duration_ms / 1000.0,
+            "duration_sec": duration_sec,
             "commits_count": commits_count,
-            "estimated_duration_sec": estimated_duration_ms / 1000.0,
+            "estimated_duration_sec": estimated_duration_sec,
             "built_on": built_on,
             "build_url": build_url,
             "parameters": parameters_str,
@@ -148,11 +167,18 @@ class JenkinsClient:
             "total_commit_msg_length": total_commit_msg_length,
             "change_set_kind": change_set_kind,
             "culprits_count": culprits_count,
+            "culprit_ratio": culprit_ratio,
             "executor_name": executor_name,
             "trigger_types": trigger_types_str,
             "error_count": error_count,
-            "build_date": build_date,   # Neues Datums-Feld
-            "build_time": build_time_str  # Neues Uhrzeit-Feld
+            "build_date": build_date,
+            "build_time": build_time_str,
+            "build_weekday": build_weekday,
+            "build_hour": build_hour,
+            "build_month": build_month,
+            "build_year": build_year,
+            "duration_diff": duration_diff,
+            "duration_ratio": duration_ratio
         }
 
     def fetch_all_builds(self):
@@ -188,6 +214,16 @@ def main():
     df = pd.DataFrame(builds_data)
     # Filtert Builds mit unbekanntem Ergebnis heraus
     df = df[df["result"] != "UNKNOWN"]
+
+    # Auswahl der zu exportierenden Felder basierend auf der Umgebungsvariable
+    fields_to_include = os.getenv("FIELDS_TO_INCLUDE")
+    if fields_to_include:
+        fields_list = [field.strip() for field in fields_to_include.split(",") if field.strip()]
+        # result_bin wird immer hinzugefügt
+        if "result_bin" not in fields_list:
+            fields_list.append("result_bin")
+        df = df[fields_list]
+
     df.to_csv(sys.stdout, index=False)
 
 if __name__ == "__main__":
