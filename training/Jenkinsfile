@@ -22,7 +22,7 @@ pipeline {
                     }
                     sh """
                     docker rm train-model-container
-                    sh "ls -la ${env.WORKSPACE}"
+                    ls -la ${env.WORKSPACE}
                     docker run --name train-model-container -v ${env.WORKSPACE}/CSV_FILE:/app/CSV_FILE model-training \\
                     python train_model.py \\
                     --input_csv /app/CSV_FILE \\
