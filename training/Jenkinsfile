@@ -16,7 +16,7 @@ pipeline {
         stage('List workspace') {
             steps {
                 withFileParameter('CSV_FILE') {
-                    sh 'echo $CSV_FILE | base64 -d > my_data.csv'
+                    sh 'echo $CSV_FILE > my_data.csv'
                     sh 'ls -la'
                 }
             }
