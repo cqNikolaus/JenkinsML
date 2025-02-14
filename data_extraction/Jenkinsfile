@@ -8,7 +8,7 @@ pipeline {
     )
     string(
       name: 'FIELDS_TO_INCLUDE',
-      defaultValue: 'build_number, result, duration_sec, commits_count, estimated_duration_sec, built_on, build_url, parameters, commit_authors_count, total_commit_msg_length, change_set_kind, culprits_count, culprit_ratio, executor_name, trigger_types, error_count, build_date, build_time, build_weekday, build_hour, build_month, build_year, duration_diff, duration_ratio'
+      defaultValue: 'build_number, result, duration_sec, commits_count, estimated_duration_sec, built_on, build_url, parameters, commit_authors_count, total_commit_msg_length, change_set_kind, culprits_count, culprit_ratio, executor_name, trigger_types, error_count, build_date, build_time, build_weekday, build_hour, build_month, build_year, duration_diff, duration_ratio',
       description: 'Kommagetrennte Liste der Felder, die in die CSV exportiert werden sollen (result_bin wird immer hinzugefügt).'
     )
   }
