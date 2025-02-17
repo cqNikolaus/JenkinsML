@@ -24,8 +24,10 @@ pipeline {
         sh """
         docker rm prediction-container
         docker create --name prediction-container prediction-image
-        docker cp ${env.WORKSPACE}/input_data.csv ${env.WORKSPACE}/model2.plk /tmp
-        docker cp /tmp/input_data.csv /tmp/model2.plk prediction-container:/app
+        docker cp ${env.WORKSPACE}/input_data.csv /tmp
+        docker cp ${env.WORKSPACE}/model2.plk /tmp
+        docker cp /tmp/input_data.csv prediction-container:/app
+        docker cp /tmp/model2.plk prediction-container:/app
         docker start prediction-container
         docker exec prediction-container python predict.py --model model2.plk --data input_data.csv
         docker stop prediction-container
