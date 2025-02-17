@@ -1,30 +1,37 @@
 pipeline {
   agent any
+  parameters {
+    base64File(name: 'TRAINED_MODEL_FILE', description: 'Das Trainierte Modell (PLK-Datei)')
+    base64File(name: 'INPUT_DATA', description: 'CSV-Datei mit den Build-Daten, um die Erfolgswahrscheinlichkeit des nächsten Durchlaufs vorherzusagen')
+  }
   stages {
     stage('Build Docker Image') {
       steps {
-        sh 'docker build -t predict-image ./prediction'
+        sh 'docker build -t prediction-image ./prediction'
       }
     }
-    stage('Copy artifact') {
+    stage('Prepare files') {
+        steps {
+            withFileParameter('TRAINED_MODEL_FILE') {
+                withFileParameter('INPUT_DATA') {
+                    sh 'cp $TRAINED_MODEL_FILE model.pkl'
+                    sh 'cp $INPUT_DATA input_data.csv'
+                }
+            }
+        }
+    }
+    stage('Run Prediction') {
       steps {
-        copyArtifacts(projectName: 'ml-model-training');
+        sh """
+        docker create --name prediction-container prediction-image
+        docker cp ${env.WORKSPACE}/input_data.csv ${env.WORKSPACE}/model.plk /tmp
+        docker cp /tmp/input_data.csv /tmp/model.plk prediction-container:/app
+        docker start prediction-container
+        docker exec prediction-container python predict.py --model model.plk --data input_data.csv
+        docker stop prediction-container
+        docker rm prediction-container
+        """
       }
-    }
-    stage('Run Container') {
-      steps {
-        sh 'docker rm -f predict-image-run 2>/dev/null || true'
-        sh 'docker create --name predict-image-run predict-image --INPUT_PARAMETER /app/model.pkl'
-        sh 'docker cp model.pkl predict-image-run:/app/model.pkl'
-        sh 'docker start -a predict-image-run'
-        sh 'docker cp predict-image-run:/app/model.pkl model.pkl'
-        sh 'docker rm predict-image-run'
-      }
-    }
-  }
-  post {
-    always {
-      archiveArtifacts artifacts: 'model.pkl', fingerprint: true
     }
   }
 }
