@@ -15,6 +15,7 @@ pipeline {
             withFileParameter('INPUT_DATA') {
                 sh 'cp $INPUT_DATA input_data.csv'
                 unstash 'model.plk'
+                sh 'cp model.plk model2.plk'
             }
         }
     }
