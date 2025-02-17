@@ -7,6 +7,7 @@ pipeline {
   stages {
     stage('Build Docker Image') {
       steps {
+        sh 'cp training/train_model.py ./prediction'
         sh 'docker build -t prediction-image ./prediction'
       }
     }

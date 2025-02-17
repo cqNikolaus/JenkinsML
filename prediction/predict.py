@@ -17,10 +17,7 @@ import argparse
 import joblib
 import pandas as pd
 import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from training.train_model import DateFeatureExtractor
+from train_model import DateFeatureExtractor
 
 def main():
     # 3. Argumenten-Parsing: Kommandozeilenargumente einlesen
