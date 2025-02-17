@@ -31,8 +31,6 @@ pipeline {
         docker cp /tmp/model2.plk prediction-container:/app
         docker start prediction-container
         docker exec prediction-container python predict.py --model model2.plk --data input_data.csv
-        docker stop prediction-container
-        docker rm prediction-container
         """
       }
     }
