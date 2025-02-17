@@ -1,7 +1,7 @@
 pipeline {
   agent any
   parameters {
-    stashedFile(name: 'TRAINED_MODEL_FILE', description: 'Das Trainierte Modell (PLK-Datei)')
+    stashedFile(name: 'model.plk', description: 'Das Trainierte Modell (PLK-Datei)')
     base64File(name: 'INPUT_DATA', description: 'CSV-Datei mit den Build-Daten, um die Erfolgswahrscheinlichkeit des nächsten Durchlaufs vorherzusagen')
   }
   stages {
@@ -14,8 +14,7 @@ pipeline {
         steps {
             withFileParameter('INPUT_DATA') {
                 sh 'cp $INPUT_DATA input_data.csv'
-                unstash 'TRAINED_MODEL_FILE'
-                sh 'cat $TRAINED_MODEL_FILE '
+                unstash 'model.plk'
             }
         }
     }
