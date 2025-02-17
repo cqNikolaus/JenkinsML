@@ -53,7 +53,7 @@ class JenkinsClient:
     def parse_build_data(self, build_number, data):
         """
         Parst die JSON-Daten eines Builds und extrahiert die für ML relevanten Felder.
-        Die unerwünschten Felder (timestamp, display_name, full_display_name, building, queue_id)
+        Unerwünschte Felder (z. B. timestamp, display_name, full_display_name, building, queue_id)
         werden nicht übernommen.
         Zusätzlich werden abgeleitete Features erzeugt.
         """
@@ -127,8 +127,14 @@ class JenkinsClient:
         else:
             change_set_kind = ""
 
+        # Behandlung von executor_name:
+        # Falls kein Executor vorhanden ist (bei Builds auf dem built_in Node), wird ein Standardwert gesetzt.
         executor_info = data.get("executor", {})
-        executor_name = executor_info.get("name", "") if isinstance(executor_info, dict) else ""
+        executor_name = ""
+        if isinstance(executor_info, dict):
+            executor_name = executor_info.get("name", "")
+        if not executor_name:
+            executor_name = "built_in_executor"
 
         # Trigger-Typen aus den Aktionen extrahieren
         trigger_types = []
