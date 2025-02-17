@@ -12,7 +12,7 @@ pipeline {
     }
     stage('Prepare files') {
         steps {
-            withFileParameter('TRAINED_MODEL_FILE') {
+            withFileParameter('TRAINED_MODEL_FILE', 'INPUT_DATA') {
                 sh 'cp $TRAINED_MODEL_FILE model.pkl'
                 sh 'cp $INPUT_DATA input_data.csv'
             }
