@@ -1,21 +1,25 @@
-#!/usr/bin/env python3
 """
 1. Einleitung:
    Dieses Skript prognostiziert die Erfolgswahrscheinlichkeit des nächsten Pipeline-Builds.
-   Es lädt ein trainiertes Modell (model.pkl) und berechnet basierend auf den übergebenen CSV-Eingabedaten
-   die durchschnittliche Erfolgswahrscheinlichkeit. Das Ergebnis wird anschließend in der Konsole ausgegeben.
+   Es lädt ein trainiertes Modell (model.pkl), welches mittels joblib gespeichert wurde,
+   und berechnet basierend auf den übergebenen CSV-Eingabedaten die durchschnittliche Erfolgswahrscheinlichkeit.
+   Das Ergebnis wird anschließend in der Konsole ausgegeben.
 
 2. Benötigte Module importieren:
    - argparse: Für das Einlesen von Kommandozeilenargumenten.
-   - pickle: Zum Laden des trainierten Modells.
+   - joblib: Zum Laden des trainierten Modells.
    - pandas: Zum Einlesen und Verarbeiten der CSV-Daten.
    - sys: Für den kontrollierten Programmabbruch bei Fehlern.
+   - train_model: Damit die im Modell referenzierten Klassen (z. B. DateFeatureExtractor) verfügbar sind.
 """
 
 import argparse
-import pickle
+import joblib
 import pandas as pd
 import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from training.train_model import DateFeatureExtractor
 
 def main():
     # 3. Argumenten-Parsing: Kommandozeilenargumente einlesen
@@ -28,8 +32,7 @@ def main():
 
     # 4. Modell laden: Trainiertes Modell aus der angegebenen Datei laden
     try:
-        with open(args.model, "rb") as model_file:
-            model = pickle.load(model_file)
+        model = joblib.load(args.model)
     except FileNotFoundError:
         sys.exit(f"Fehler: Die Modell-Datei '{args.model}' wurde nicht gefunden.")
     except Exception as e:
