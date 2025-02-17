@@ -15,7 +15,7 @@ pipeline {
             withFileParameter('INPUT_DATA') {
                 sh 'cp $INPUT_DATA input_data.csv'
                 unstash 'TRAINED_MODEL_FILE'
-                sh 'cp $TRAINED_MODEL_FILE model.pkl'
+                sh 'cat $TRAINED_MODEL_FILE '
             }
         }
     }
