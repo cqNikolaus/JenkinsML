@@ -1,7 +1,7 @@
 pipeline {
   agent any
   parameters {
-    stashedFile(name: 'TRAINED_MODEL_FILE', description: 'Das Trainierte Modell (PLK-Datei)')
+    base64File(name: 'TRAINED_MODEL_FILE', description: 'Das Trainierte Modell (PLK-Datei)')
     base64File(name: 'INPUT_DATA', description: 'CSV-Datei mit den Build-Daten, um die Erfolgswahrscheinlichkeit des nächsten Durchlaufs vorherzusagen')
   }
   stages {
