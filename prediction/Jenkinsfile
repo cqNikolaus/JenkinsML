@@ -23,7 +23,6 @@ pipeline {
     stage('Run Prediction') {
       steps {
         sh """
-        docker rm prediction-container
         docker create --name prediction-container prediction-image tail -f /dev/null
         docker cp jenkins:${env.WORKSPACE}/input_data.csv /tmp
         docker cp jenkins:${env.WORKSPACE}/model2.plk /tmp
