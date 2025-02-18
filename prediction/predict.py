@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 1. Einleitung:
    Dieses Skript prognostiziert die Erfolgswahrscheinlichkeit des nächsten Pipeline-Builds.
@@ -10,17 +11,17 @@
    - joblib: Zum Laden des trainierten Modells.
    - pandas: Zum Einlesen und Verarbeiten der CSV-Daten.
    - sys: Für den kontrollierten Programmabbruch bei Fehlern.
-   - train_model: Damit die im Modell referenzierten Klassen (z. B. DateFeatureExtractor) verfügbar sind.
+   - train_model: Damit die im Modell referenzierten Klassen (z. B. TimeFeaturesExtractor) verfügbar sind.
 """
 
 import argparse
 import joblib
 import pandas as pd
 import sys
-from train_model import DateFeatureExtractor
+from train_model import TimeFeaturesExtractor  # Wichtig für das Unpickling des Modells
 
 def main():
-    # 3. Argumenten-Parsing: Kommandozeilenargumente einlesen
+    # Argument-Parsing: Kommandozeilenargumente einlesen
     parser = argparse.ArgumentParser(
         description="Vorhersage der Erfolgswahrscheinlichkeit des nächsten Pipeline-Builds"
     )
@@ -28,7 +29,7 @@ def main():
     parser.add_argument("--data", required=True, help="Pfad zur CSV-Datei mit Eingabedaten")
     args = parser.parse_args()
 
-    # 4. Modell laden: Trainiertes Modell aus der angegebenen Datei laden
+    # Modell laden
     try:
         model = joblib.load(args.model)
     except FileNotFoundError:
@@ -36,7 +37,7 @@ def main():
     except Exception as e:
         sys.exit(f"Fehler beim Laden des Modells: {e}")
 
-    # 5. CSV-Daten laden: Eingabedaten aus der CSV-Datei einlesen
+    # CSV-Daten laden
     try:
         data = pd.read_csv(args.data)
     except FileNotFoundError:
@@ -44,16 +45,32 @@ def main():
     except Exception as e:
         sys.exit(f"Fehler beim Laden der CSV-Daten: {e}")
 
-    # 6. Vorhersage: Erfolgswahrscheinlichkeit anhand der Eingabedaten berechnen
+    # --- Spalten-Ausrichtung ---
+    # Extrahiere aus dem im Modell enthaltenen Preprocessor die erwarteten numerischen und kategorialen Spalten.
     try:
-        # Annahme: Das Modell besitzt die Methode predict_proba, die für jeden Eintrag Wahrscheinlichkeiten zurückgibt.
+        preprocessor = model.named_steps["preprocessor"]
+        # Annahme: Der erste Transformer ist für numerische und der zweite für kategoriale Features.
+        expected_numeric = list(preprocessor.transformers_[0][2])
+        expected_categorical = list(preprocessor.transformers_[1][2])
+        expected_columns = expected_numeric + expected_categorical
+    except Exception as e:
+        sys.exit(f"Fehler beim Extrahieren der erwarteten Spalten: {e}")
+
+    # Fehlende erwartete Spalten mit NaN ergänzen, damit die Pipeline sie verarbeiten kann.
+    for col in expected_columns:
+        if col not in data.columns:
+            data[col] = pd.NA
+
+    # --- Vorhersage ---
+    try:
+        # predict_proba liefert für jeden Eintrag Wahrscheinlichkeiten zurück.
         predictions = model.predict_proba(data)
-        # Annahme: Die Spalte mit Index 1 entspricht der Wahrscheinlichkeit eines erfolgreichen Builds.
-        success_probability = predictions[:, 1].mean()  # Durchschnittswahrscheinlichkeit über alle Eingaben
+        # Annahme: Spalte mit Index 1 entspricht der Erfolgswahrscheinlichkeit.
+        success_probability = predictions[:, 1].mean()  # Durchschnitt über alle Einträge
     except Exception as e:
         sys.exit(f"Fehler während der Vorhersage: {e}")
 
-    # 7. Ausgabe: Ergebnis klar in der Konsole ausgeben
+    # Ergebnis in der Konsole ausgeben
     print(f"Erfolgswahrscheinlichkeit: {round(success_probability * 100)}%")
 
 if __name__ == "__main__":
