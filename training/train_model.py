@@ -70,7 +70,7 @@ class TimeFeaturesExtractor(BaseEstimator, TransformerMixin):
         for col in self.date_cols:
             if col in X.columns:
                 try:
-                    X[col] = pd.to_datetime(X[col], errors='coerce', dayfirst=True)
+                    X[col] = pd.to_datetime(X[col], errors='coerce', format="%Y-%m-%d")
                     X[f"{col}_year"] = X[col].dt.year
                     X[f"{col}_month"] = X[col].dt.month
                     X[f"{col}_day"] = X[col].dt.day
@@ -84,7 +84,7 @@ class TimeFeaturesExtractor(BaseEstimator, TransformerMixin):
                 try:
                     # Falls die Spalte nicht numerisch ist, versuche sie zu parsen und die Stunde zu extrahieren
                     if not np.issubdtype(X[col].dtype, np.number):
-                        X[col] = pd.to_datetime(X[col], errors='coerce').dt.hour
+                        X[col] = pd.to_datetime(X[col], errors='coerce', format="%H:%M:%S").dt.hour
                     # Annahme: Werte im Bereich [0,23]
                     X[f"{col}_sin"] = np.sin(2 * np.pi * X[col] / 24)
                     X[f"{col}_cos"] = np.cos(2 * np.pi * X[col] / 24)
