@@ -10,7 +10,8 @@ import pandas as pd
 from scipy.stats import chi2_contingency
 
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, SimpleImputer, LabelEncoder
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
+from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
