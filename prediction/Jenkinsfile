@@ -16,7 +16,6 @@ pipeline {
             withFileParameter('INPUT_DATA') {
                 sh 'cp $INPUT_DATA input_data.csv'
                 unstash 'model.plk'
-                sh 'cp model.plk model2.plk'
             }
         }
     }
@@ -25,11 +24,11 @@ pipeline {
         sh """
         docker create --name prediction-container prediction-image tail -f /dev/null
         docker cp jenkins:${env.WORKSPACE}/input_data.csv /tmp
-        docker cp jenkins:${env.WORKSPACE}/model2.plk /tmp
+        docker cp jenkins:${env.WORKSPACE}/model.plk /tmp
         docker cp /tmp/input_data.csv prediction-container:/app
-        docker cp /tmp/model2.plk prediction-container:/app
+        docker cp /tmp/model.plk prediction-container:/app
         docker start prediction-container
-        docker exec prediction-container python predict.py --model model2.plk --data input_data.csv
+        docker exec prediction-container python predict.py --model model.plk --data input_data.csv
         docker stop prediction-container
         docker rm prediction-container
         """
