@@ -3,7 +3,6 @@ pipeline {
     parameters {
         base64File(name: 'CSV_FILE', description: 'Bitte die CSV-Datei zum Training hochladen')
         string(name: 'MODEL_NAME', defaultValue: 'random_forest', description: 'Modellname: random_forest, gradient_boosting, logistic_regression, xgboost')
-        string(name: 'DATE_COLUMNS', defaultValue: '', description: 'Optionale, kommagetrennte Liste von Datumsspalten')
     }
     stages {
         stage('Build Docker Image') {
@@ -20,32 +19,24 @@ pipeline {
         }
         stage('Run Training') {
             steps {
-                script {
-                    def dateColumnsArg = ""
-                    if (params.DATE_COLUMNS?.trim()) {
-                        dateColumnsArg = "--date_columns ${params.DATE_COLUMNS}"
-                    }
-                    sh """
-                    docker rm -f train-model-container
-                    docker create --name train-model-container model-training tail -f /dev/null
+                sh """
+                docker rm -f train-model-container
+                docker create --name train-model-container model-training tail -f /dev/null
 
-                    docker cp jenkins:${env.WORKSPACE}/training_data.csv /tmp/training_data.csv
-                    docker cp /tmp/training_data.csv train-model-container:/app/training_data.csv
+                docker cp jenkins:${env.WORKSPACE}/training_data.csv /tmp/training_data.csv
+                docker cp /tmp/training_data.csv train-model-container:/app/training_data.csv
 
-                    docker start train-model-container
-                    docker exec train-model-container python train_model.py \\
-                    --input_csv /app/training_data.csv \\
-                    --model_name ${params.MODEL_NAME} \\
-                    ${dateColumnsArg}
+                docker start train-model-container
+                docker exec train-model-container python train_model.py \\
+                --input_csv /app/training_data.csv \\
+                --model_name ${params.MODEL_NAME}
 
 
-                    docker cp train-model-container:/app/model.pkl /tmp/model.pkl
-                    docker cp /tmp/model.pkl jenkins:/var/jenkins_home/workspace/train-model/model.pkl
-                    docker stop train-model-container
-                    docker rm train-model-container
-
-                    """
-                }
+                docker cp train-model-container:/app/model.pkl /tmp/model.pkl
+                docker cp /tmp/model.pkl jenkins:/var/jenkins_home/workspace/train-model/model.pkl
+                docker stop train-model-container
+                docker rm train-model-container
+                """
             }
         }
     }
