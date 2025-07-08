@@ -71,7 +71,7 @@ def main():
         sys.exit(f"Fehler während der Vorhersage: {e}")
 
     # Ergebnis in der Konsole ausgeben
-    print(f"Erfolgswahrscheinlichkeit: {round(success_probability * 100)}%")
+    print(f"Fehlschlagswahrscheinlichkeit: {round(success_probability * 100)}%")
 
 if __name__ == "__main__":
     main()
