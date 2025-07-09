@@ -28,17 +28,15 @@ pipeline {
           docker cp /tmp/input_data.csv prediction-container:/app
           docker cp /tmp/model.plk prediction-container:/app
           docker start prediction-container
-      
-          @echo " "
-          @echo "==============================================="
-          @echo "===   PRÄVENTIVE ANALYSE: ERGEBNIS          ==="
-          @echo "==============================================="
-          
-          @docker exec prediction-container python predict.py --model model.plk --data input_data.csv
-          
-          @echo "==============================================="
-          @echo " "
-          
+          set +x
+          echo " "
+          echo "==============================================="
+          echo "===   PRÄVENTIVE ANALYSE: ERGEBNIS          ==="
+          echo "==============================================="
+          docker exec prediction-container python predict.py --model model.plk --data input_data.csv 
+          echo "==============================================="
+          echo " "
+          set -x
           docker stop prediction-container
           docker rm prediction-container
           """
