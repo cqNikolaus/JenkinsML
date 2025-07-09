@@ -21,24 +21,27 @@ pipeline {
     }
     stage('Run Prediction') {
       steps {
-        sh """
-        docker create --name prediction-container prediction-image tail -f /dev/null
-        docker cp jenkins:${env.WORKSPACE}/input_data.csv /tmp
-        docker cp jenkins:${env.WORKSPACE}/model.plk /tmp
-        docker cp /tmp/input_data.csv prediction-container:/app
-        docker cp /tmp/model.plk prediction-container:/app
-        docker start prediction-container
-
-        echo " "
-        echo "==============================================="
-        echo "===   PRÄVENTIVE ANALYSE: ERGEBNIS          ==="
-        echo "==============================================="         
-        docker exec prediction-container python predict.py --model model.plk --data input_data.csv
-        echo "==============================================="
-        echo " "
-        docker stop prediction-container
-        docker rm prediction-container
-        """
+          sh """
+          docker create --name prediction-container prediction-image tail -f /dev/null
+          docker cp jenkins:${env.WORKSPACE}/input_data.csv /tmp
+          docker cp jenkins:${env.WORKSPACE}/model.plk /tmp
+          docker cp /tmp/input_data.csv prediction-container:/app
+          docker cp /tmp/model.plk prediction-container:/app
+          docker start prediction-container
+      
+          @echo " "
+          @echo "==============================================="
+          @echo "===   PRÄVENTIVE ANALYSE: ERGEBNIS          ==="
+          @echo "==============================================="
+          
+          docker exec prediction-container python predict.py --model model.plk --data input_data.csv
+          
+          @echo "==============================================="
+          @echo " "
+          
+          docker stop prediction-container
+          docker rm prediction-container
+          """
       }
     }
   }
