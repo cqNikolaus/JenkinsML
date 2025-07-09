@@ -34,7 +34,7 @@ pipeline {
           @echo "===   PRÄVENTIVE ANALYSE: ERGEBNIS          ==="
           @echo "==============================================="
           
-          docker exec prediction-container python predict.py --model model.plk --data input_data.csv
+          @docker exec prediction-container python predict.py --model model.plk --data input_data.csv
           
           @echo "==============================================="
           @echo " "
